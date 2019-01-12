@@ -1,4 +1,5 @@
 import VueRouter from 'vue-router'
+import Home from '@/components/Home.vue'
 import Login from '@/components/Login.vue'
 import cookies from 'js-cookie'
 
@@ -6,6 +7,7 @@ const routes = [
   {
     path: '/',
     beforeEnter: (to, from, next) => cookies.get('access_token') ? next() : next('login'),
+    component: Home
   },
   { path: '/login', component: Login },
   {
