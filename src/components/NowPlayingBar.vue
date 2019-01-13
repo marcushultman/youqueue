@@ -7,8 +7,7 @@
         <div class="artist">{{ music.artist }}</div>
       </div>
     </div>
-    <div class="spacer"/>
-    <div class="fade-container" @click="$emit('crossfade')" v-if="videos[0] || videos[1]">
+    <div class="button-container" @click="$emit('crossfade')" v-if="videos[0] || videos[1]">
       <button :style="crossfadeButtonStyle">&uarr;</button>
       <svg width="42" height="42">
         <circle :style="crossfadeProgressStyle" stroke="white" stroke-width="3" fill="transparent"
@@ -21,13 +20,16 @@
         <div v-else>Fade to music now</div>
       </div>
     </div>
-    <div class="spacer"/>
+    <div class="button-container autofade" @click="$emit('update:autofade', !autofade)" :class="{ enabled: autofade }">
+      <button v-if="autofade">&#10003;</button>
+      <button v-else>&#10555;</button>
+      <div class="description">Autofade</div>
+    </div>
     <div class="progress-container">
       <div class="elapsed">{{ elapsed | moment("m:ss") }}</div>
       <div class="progress"><div class="inner" :style="musicProgressStyle"></div></div>
       <div class="duration">{{ duration | moment("m:ss")  }}</div>
     </div>
-    <div class="spacer"/>
   </div>
 </template>
 
@@ -52,6 +54,9 @@ export default {
     crossfade: {
       type: Object,
       required: true
+    },
+    autofade: {
+      type: Boolean,
     },
   },
   computed: {
@@ -108,24 +113,26 @@ export default {
 .spacer {
   flex: 0 4 7%;
 }
-.fade-container {
+.button-container {
   margin: 0 8px;
   display: flex;
   align-items: center;
   position: relative;
+  font-size: 14px;
+  cursor: pointer;
   & button {
     padding: 0;
-    min-width: 40px;
-    width: 40px;
-    height: 40px;
+    min-width: 36px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     border: 1px solid white;
     background: none;
     color: white;
     font-size: 24px;
+    cursor: inherit;
     outline: none;
     box-sizing: content-box;
-    cursor: pointer;
     transform-origin: 50% 50%;
     transition: transform ease 500ms;
   }
@@ -138,7 +145,14 @@ export default {
     transform-origin: 50% 50%;
   }
   & .description {
-    margin-left: 16px;
+    margin-left: 10px;
+  }
+}
+.autofade.enabled {
+  color: #1ed760;
+  & button {
+    color: #1ed760;
+    border: 1px solid #1ed760;
   }
 }
 .progress-container {

@@ -39,6 +39,7 @@
         :music="music"
         :videos="videos"
         :crossfade="crossfade"
+        :autofade.sync="autofade"
         @crossfade="startCrossfading"/>
   </div>
 </template>
@@ -99,6 +100,7 @@ export default {
         controls: 1,
         start: 5
       },
+      autofade: true,
       crossfade: {
         start: 0,
         to_video: true,
@@ -234,7 +236,7 @@ export default {
         return;
       }
       // trigger crossfade?
-      if (this.crossfade.start === 0) {
+      if (this.autofade && this.crossfade.start === 0) {
         let time_left = Infinity;
         if (this.crossfade.to_video || this.duoVideo) {
           const [progress, duration] = await Promise.all([this.videoPlayer.getCurrentTime(), this.videoPlayer.getDuration()]);
