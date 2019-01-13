@@ -18,6 +18,9 @@ Vue.mixin({
       const authorization = `Bearer ${cookies.get('access_token')}`;
       return fetch(input, Object.assign({ headers: { authorization }}, init));
     },
+    logout() {
+      cookies.remove('access_token');
+    },
   }
 })
 

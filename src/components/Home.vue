@@ -51,6 +51,7 @@ const search = require('youtube-search');
 class MusicPlayer {
   constructor(fetch) {
     Object.assign(this, {
+      disabled: false,
       id: null,
       name: null,
       image: null,
@@ -200,16 +201,19 @@ export default {
     async updateMusic() {
       const res = await this.fetch('https://api.spotify.com/v1/me/player');
       if (res.status == 401) {
-        this.$router.push('/login');
+        this.logout();
+        Object.assign(this.music, { disabled: true, id: null, progress: 0, is_playing: false });
+        clearInterval(this.interval.update);
+        clearInterval(this.interval.progress);
         return;
       }
       if (res.status === 204) {
-        this.music.id = null;
+        Object.assign(this.music, { id: null, progress: 0, is_playing: false });
         return;
       }
       const data = await res.json();
       if (!data.item) {
-        this.music.id = null;
+        Object.assign(this.music, { id: null, progress: 0, is_playing: false });
         return;
       }
       if (this.music.id !== data.item.id) {

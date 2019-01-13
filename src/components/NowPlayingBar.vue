@@ -1,12 +1,16 @@
 <template>
   <div class="now-playing-bar">
-    <div class="player">
+    <div class="player" v-if="!music.disabled">
       <img :src="music.image">
       <div class="player-text">
         <div class="track">{{ music.name }}</div>
         <div class="artist">{{ music.artist }}</div>
       </div>
     </div>
+    <a v-else class="button-container" :href="loginUrl">
+      <img src="../assets/logo.png">
+      <div class="description">Log in with Spotify</div>
+    </a>
     <div class="button-container" @click="$emit('crossfade')" v-if="videos[0] || videos[1]">
       <button :style="crossfadeButtonStyle">&uarr;</button>
       <svg width="42" height="42">
@@ -34,10 +38,12 @@
 </template>
 
 <script>
+import LoginUrl from './LoginUrl';
 import moment from 'moment'
 
 export default {
   name: 'NowPlayingBar',
+  mixins: [LoginUrl],
   props: {
     crossfade_time: {
       type: Number,
@@ -80,6 +86,7 @@ export default {
 
 <style scoped lang="scss">
 .now-playing-bar {
+  min-height: 72px;
   background: #282828;
   color: white;
   text-align: left;
@@ -118,6 +125,8 @@ export default {
   display: flex;
   align-items: center;
   position: relative;
+  color: inherit;
+  text-decoration: none;
   font-size: 14px;
   cursor: pointer;
   & button {
@@ -135,6 +144,10 @@ export default {
     box-sizing: content-box;
     transform-origin: 50% 50%;
     transition: transform ease 500ms;
+  }
+  & img {
+    width: 36px;
+    height: 36px;
   }
   & svg {
     position: absolute;
