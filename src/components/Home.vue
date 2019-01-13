@@ -168,7 +168,7 @@ export default {
         this.videoSearch.results = [];
       }
       this.videoSearch.waiting = true;
-      const key = 'AIzaSyDpyBqSMf8YlMB00yi2e5AyKwEqF9dlw6U';
+      const key = process.env.VUE_APP_YOUTUBE;
       const maxResults = 10;
       const { pageInfo, results } = await search(query, { key, maxResults, type: 'video', pageToken });
       this.videoSearch.pageInfo = pageInfo;
