@@ -13,9 +13,9 @@
     </a>
     <div class="button-container" @click="$emit('crossfade')" v-if="videos[0] || videos[1]">
       <button :style="crossfadeButtonStyle">&uarr;</button>
-      <svg width="42" height="42">
+      <svg width="36" height="36">
         <circle :style="crossfadeProgressStyle" stroke="white" stroke-width="3" fill="transparent"
-            r="20" cx="21" cy="21"/>
+            r="16" cx="18" cy="18"/>
       </svg>
       <div class="description">
         <div v-if="crossfade.start">Fading to {{ crossfade.to_video ? 'video' : 'music' }}...</div>
@@ -71,7 +71,7 @@ export default {
       return { transform };
     },
     crossfadeProgressStyle() {
-      const strokeDasharray = [(this.crossfade.start ? 1 : 0) * 40 * Math.PI, 40 * Math.PI].join();
+      const strokeDasharray = [(this.crossfade.start ? 1 : 0) * 32 * Math.PI, 32 * Math.PI].join();
       const transition = `stroke-dasharray linear ${this.crossfade.start ? this.crossfade_time : 0}ms`;
       return { strokeDasharray, transition };
     },
@@ -141,7 +141,7 @@ export default {
     font-size: 24px;
     cursor: inherit;
     outline: none;
-    box-sizing: content-box;
+    box-sizing: border-box;
     transform-origin: 50% 50%;
     transition: transform ease 500ms;
   }
