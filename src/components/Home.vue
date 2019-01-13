@@ -9,6 +9,31 @@
         </template>
         <button class="close-videos" v-if="duoVideo" @click="$set(videos, 1 - activeVideo, null)">&times;</button>
       </div>
+      <div v-if="!videoSearch.pageInfo.resultsPerPage" class="video-search">
+        <div>
+          <div>Search</div>
+          <div class="video-search-box">
+            <input v-model="videoSearch.q" @keydown.enter="search(videoSearch.q)">
+            <button @click="search(videoSearch.q)">&#x1F50D;</button>
+          </div>
+        </div>
+      </div>
+      <template v-else>
+        <div class="video-list-header">
+          <button @click="videoSearch.pageInfo.resultsPerPage = 0">&larr;</button>
+          <span>Showing results for: "{{ videoSearch.q }}"</span>
+        </div>
+        <div class="video-list" ref="videoList" @scroll="videoListScroll">
+          <div v-for="video in videoSearch.results" :key="video.id" class="video-item" @click="selectVideo(video.link)">
+            <img :src="video.thumbnails.default.url">
+            <div class="details">
+              <div class="title">{{ video.title }}</div>
+              <div class="author">{{ video.channelTitle }}&nbsp;&middot;&nbsp;{{ video.publishedAt | moment('from', 'now') }}</div>
+              <div class="description">{{ video.description }}</div>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
     <NowPlayingBar :crossfade-time="crossfade_time"
         :music="music"
@@ -20,6 +45,7 @@
 
 <script>
 import NowPlayingBar from './NowPlayingBar.vue'; 
+const search = require('youtube-search');
 
 class MusicPlayer {
   constructor(fetch) {
@@ -63,6 +89,12 @@ export default {
       music: new MusicPlayer(this.fetch),
       videos: [null, null],
       activeVideo: 0,
+      videoSearch: {
+        q: '',
+        waiting: false,
+        pageInfo: {},
+        results: [],
+      },
       playerVars: {
         controls: 1,
         start: 5
@@ -127,6 +159,41 @@ export default {
     setProgressUpdates() {
       clearInterval(this.interval.progress);
       this.interval.progress = setInterval(this.stepProgress, 500);
+    },
+    async search(query, pageToken) {
+      if (!pageToken) {
+        this.videoSearch.results = [];
+      }
+      this.videoSearch.waiting = true;
+      const key = 'AIzaSyDpyBqSMf8YlMB00yi2e5AyKwEqF9dlw6U';
+      const maxResults = 10;
+      const { pageInfo, results } = await search(query, { key, maxResults, type: 'video', pageToken });
+      this.videoSearch.pageInfo = pageInfo;
+      this.videoSearch.results = this.videoSearch.results.concat(results);
+      this.videoSearch.waiting = false;
+    },
+    videoListScroll({ target }) {
+      const { waiting, pageInfo } = this.videoSearch;
+      const { scrollLeft, scrollWidth, clientWidth } = target;
+      if (!waiting && scrollLeft >= scrollWidth - 2 * clientWidth) {
+        this.search(null, pageInfo.nextPageToken);
+      }
+    },
+    async selectVideo(url) {
+      if (this.crossfade.start !== 0) {
+        return;
+      }
+      const id = this.$youtube.getIdFromUrl(url);
+      const state = await this.videoPlayer.getPlayerState();
+      if (state === 1) {
+        if (this.videos[this.activeVideo] === id) {
+          this.$set(this.videos, 1 - this.activeVideo, null);
+        } else {
+          this.$set(this.videos, 1 - this.activeVideo, id);
+        }
+      } else {
+        this.$set(this.videos, this.activeVideo, id);
+      }
     },
     async updateMusic() {
       const res = await this.fetch('https://api.spotify.com/v1/me/player');
@@ -283,6 +350,71 @@ export default {
     z-index: 1;
     transform: scale(0.25) translate(-40px, -40px);
     transition: transform ease 1s;
+  }
+}
+.video-search {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 20px;
+}
+.video-search-box {
+  display: flex;
+  & input {
+    padding: 0 8px;
+  }
+  & input, & button {
+    font-size: 22px;
+    outline: none;
+    border: 1px solid #b3b3b3;
+    border-radius: 4px 0 0 4px;
+  }
+  & button {
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+  }
+}
+.video-list-header {
+  margin: 16px 8px;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  & button {
+    width: 32px;
+    height: 32px;
+    font-size: 22px;
+    border: 1px solid black;
+    border-radius: 50%;
+    margin-right: 16px;
+  }
+}
+.video-list {
+  display: flex;
+  overflow-x: scroll;
+  padding: 0 8px;
+}
+.video-item {
+  display: flex;
+  align-items: start;
+  cursor: pointer;
+  & img { object-fit: contain; }
+  & .details {
+    width: 240px;
+    margin: 0 8px;
+    font-size: 12px;
+    font-weight: 450;
+    & .title {
+      font-size: 14px;
+      font-weight: bold;
+    }
+    & .author {
+      margin: 4px 0;
+    }
+    & .description {
+      font-size: 10px;
+    }
   }
 }
 </style>
