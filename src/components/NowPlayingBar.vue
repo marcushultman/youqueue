@@ -8,7 +8,7 @@
       </div>
     </div>
     <div class="spacer"/>
-    <div class="fade-container" @click="$emit('crossfade')">
+    <div class="fade-container" @click="$emit('crossfade')" v-if="videos[0] || videos[1]">
       <button :style="crossfadeButtonStyle">&uarr;</button>
       <svg width="42" height="42">
         <circle :style="crossfadeProgressStyle" stroke="white" stroke-width="3" fill="transparent"
@@ -16,6 +16,7 @@
       </svg>
       <div class="description">
         <div v-if="crossfade.start">Fading to {{ crossfade.to_video ? 'video' : 'music' }}...</div>
+        <div v-else-if="videos[0] && videos[1]">Fade to next video</div>
         <div v-else-if="music.is_playing">Fade to video now</div>
         <div v-else>Fade to music now</div>
       </div>
@@ -44,6 +45,10 @@ export default {
       type: Object,
       required: true
     },
+    videos: {
+      type: Array,
+      required: true
+    },
     crossfade: {
       type: Object,
       required: true
@@ -51,7 +56,7 @@ export default {
   },
   computed: {
     crossfadeButtonStyle() {
-      const transform = `rotate(${this.crossfade.to_video ? -90 : 0 }deg)`;
+      const transform = `rotate(${this.videos[0] && this.videos[1] ? 90 : this.crossfade.to_video ? -90 : 0 }deg)`;
       return { transform };
     },
     crossfadeProgressStyle() {
@@ -120,6 +125,7 @@ export default {
     font-size: 24px;
     outline: none;
     box-sizing: content-box;
+    cursor: pointer;
     transform-origin: 50% 50%;
     transition: transform ease 500ms;
   }

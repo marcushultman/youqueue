@@ -2,13 +2,19 @@
   <div class="home">
     <div class="content">
       <div class="video-container">
-        <div v-show="video">
-          <youtube :video-id="video" :player-vars="playerVars" ref="youtube"/>
-        </div>
+        <template v-for="(id, i) in videos">
+          <div v-show="id" :key="i" class="video-wrapper" :class="videoStyle(i)">
+            <youtube :video-id="id" :player-vars="playerVars" ref="youtube"/>
+          </div>
+        </template>
+        <button class="close-videos" v-if="duoVideo" @click="$set(videos, 1 - activeVideo, null)">&times;</button>
       </div>
-      <input v-model="video">
     </div>
-    <NowPlayingBar :crossfade-time="crossfade_time" :music="music" :crossfade="crossfade" @crossfade="startCrossfading"/>
+    <NowPlayingBar :crossfade-time="crossfade_time"
+        :music="music"
+        :videos="videos"
+        :crossfade="crossfade"
+        @crossfade="startCrossfading"/>
   </div>
 </template>
 
@@ -55,9 +61,10 @@ export default {
   data() {
     return {
       music: new MusicPlayer(this.fetch),
-      video: '',
+      videos: [null, null],
+      activeVideo: 0,
       playerVars: {
-        controls: 0,
+        controls: 1,
         start: 5
       },
       crossfade: {
@@ -69,14 +76,29 @@ export default {
     };
   },
   computed: {
+    duoVideo() {
+      return this.videos[0] && this.videos[1];
+    },
     valid() {
-      return this.video && this.music.id;
+      return (this.videos[0] || this.videos[1]) && this.music.id;
     },
     videoPlayer() {
-      return this.$refs.youtube.player;
+      return this.$refs.youtube[this.activeVideo].player;
+    },
+    nextVideoPlayer() {
+      return this.$refs.youtube[1 - this.activeVideo].player;
     },
     musicProgressStyle() {
       return { width: `${100 * (this.music.progress / this.music.duration)}%` };
+    },
+    videoStyle() {
+      return (i) => {
+        if (this.duoVideo) {
+          const is_active = i === this.activeVideo;
+          const thumbnail = this.crossfade.start ? is_active : !is_active;
+          return { thumbnail };
+        }
+      };
     },
   },
   mounted() {
@@ -147,7 +169,7 @@ export default {
       // trigger crossfade?
       if (this.crossfade.start === 0) {
         let time_left = Infinity;
-        if (this.crossfade.to_video) {
+        if (this.crossfade.to_video || this.duoVideo) {
           const [progress, duration] = await Promise.all([this.videoPlayer.getCurrentTime(), this.videoPlayer.getDuration()]);
           if (duration !== 0) {
             time_left = (duration - progress) * 1000;
@@ -173,15 +195,22 @@ export default {
       if (this.crossfade.percentage >= 100) {
         this.crossfade.start = 0;
         this.crossfade.percentage = 0;
-        if (this.crossfade.to_video) {
+        if (this.duoVideo) {
+          this.$set(this.videos, this.activeVideo, null);
+          this.activeVideo = 1 - this.activeVideo;
+        } else if (this.crossfade.to_video) {
           this.music.pause();
         } else {
           this.videoPlayer.stopVideo();
+          this.$set(this.videos, this.activeVideo, null);
         }
       }
     },
     updateVolumes(percentage) {
-      if (this.crossfade.to_video) {
+      if (this.duoVideo) {
+        this.videoPlayer.setVolume(100 - percentage);
+        this.nextVideoPlayer.setVolume(percentage);
+      } else if (this.crossfade.to_video) {
         this.music.setVolume(100 - percentage);
         this.videoPlayer.setVolume(percentage);
       } else {
@@ -193,7 +222,12 @@ export default {
       if (!this.valid) {
         return;
       }
-      if (this.crossfade.start) {
+      if (this.duoVideo) {
+        this.crossfade.start = Date.now();
+        this.videoPlayer.playVideo();
+        this.nextVideoPlayer.playVideo();
+        this.updateVolumes(0);
+      } else if (this.crossfade.start) {
         this.crossfade.to_video = !this.crossfade.to_video;
       } else {
         this.crossfade.to_video = this.music.is_playing;
@@ -212,11 +246,43 @@ export default {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  & .content { flex: 1; }
+  & .content {
+    flex: 1;
+    overflow-y: scroll;
+    text-align: initial;
+  }
 }
 .video-container {
-  height: 360px;
   margin: 8px 0;
+  min-height: 360px;
   background: black;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  & .close-videos {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    border: none;
+    outline: none;
+    background: none;
+    color: white;
+    font-size: 32px;
+    cursor: pointer;
+  }
+}
+.video-wrapper {
+  position: absolute;
+  display: flex;
+  transform-origin: 100% 100%;
+  &.thumbnail {
+    z-index: 1;
+    transform: scale(0.25) translate(-40px, -40px);
+    transition: transform ease 1s;
+  }
 }
 </style>
