@@ -13,8 +13,8 @@
         <div>
           <div>Search</div>
           <div class="video-search-box">
-            <input v-model="videoSearch.q" @keydown.enter="search(videoSearch.q)">
-            <button @click="search(videoSearch.q)">&#x1F50D;</button>
+            <input v-model="videoSearch.q" @keydown.enter="search()">
+            <button @click="search()">&#x1F50D;</button>
           </div>
         </div>
       </div>
@@ -24,7 +24,7 @@
           <span>Showing results for: "{{ videoSearch.q }}"</span>
         </div>
         <div class="video-list" ref="videoList" @scroll="videoListScroll">
-          <div v-for="video in videoSearch.results" :key="video.id" class="video-item" @click="selectVideo(video.link)">
+          <div v-for="(video, i) in videoSearch.results" :key="i" class="video-item" @click="selectVideo(video.link)">
             <img :src="video.thumbnails.default.url">
             <div class="details">
               <div class="title">{{ video.title }}</div>
@@ -163,14 +163,15 @@ export default {
       clearInterval(this.interval.progress);
       this.interval.progress = setInterval(this.stepProgress, 500);
     },
-    async search(query, pageToken) {
+    async search(pageToken) {
       if (!pageToken) {
         this.videoSearch.results = [];
       }
       this.videoSearch.waiting = true;
       const key = process.env.VUE_APP_YOUTUBE;
       const maxResults = 10;
-      const { pageInfo, results } = await search(query, { key, maxResults, type: 'video', pageToken });
+      const options = { key, maxResults, type: 'video', pageToken };
+      const { pageInfo, results } = await search(this.videoSearch.q, options);
       this.videoSearch.pageInfo = pageInfo;
       this.videoSearch.results = this.videoSearch.results.concat(results);
       this.videoSearch.waiting = false;
@@ -178,8 +179,8 @@ export default {
     videoListScroll({ target }) {
       const { waiting, pageInfo } = this.videoSearch;
       const { scrollLeft, scrollWidth, clientWidth } = target;
-      if (!waiting && scrollLeft >= scrollWidth - 2 * clientWidth) {
-        this.search(null, pageInfo.nextPageToken);
+      if (!waiting && pageInfo.nextPageToken && scrollLeft >= scrollWidth - 2 * clientWidth) {
+        this.search(pageInfo.nextPageToken);
       }
     },
     async selectVideo(url) {
